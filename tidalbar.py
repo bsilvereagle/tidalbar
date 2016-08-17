@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import tidalapi
 import mpv
 import getpass
