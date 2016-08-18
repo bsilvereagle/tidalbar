@@ -31,7 +31,10 @@ while login_attempts < allowed_attempts:
         username = input('TIDAL username: ')
         password = getpass.getpass('TIDAL password: ')
         if session.login(username, password):
-            print('\N{EIGHTH NOTE} Successfully logged in! \N{EIGHTH NOTE}')
+            try:
+                print('\N{EIGHTH NOTE} Successfully logged in! \N{EIGHTH NOTE}')
+            except UnicodeEncodeError:
+                print('Successfully logged in!')
             break
         else:
             print('Error establishing a session. Check your internet connection.')
