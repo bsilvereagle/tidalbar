@@ -63,7 +63,8 @@ if __name__ == '__main__':
     # Create a keyboard
     kb = KBHit()
     try:
-        print('Press keys to see their keycode, \'q\' to quit')
+        kb.getch()
+        print('Press keys to see their keycode, \'q\' to quit', end='\r\n')
         # Spin and spin printing the character hit until 'q' is hit
         while True:
             keypress = kb.getch()
@@ -71,8 +72,8 @@ if __name__ == '__main__':
                 if keypress == ord('q'):
                     break
                 else:
-                    print(str(keypress)+ '\t' + chr(keypress))
-        kb.reset()
+                    print(str(keypress)+ '\t' + chr(keypress), end='\r\n')
     except:
+        pass
+    finally:
         kb.reset()
-        print('Clean Exit')
