@@ -175,9 +175,9 @@ try:
         # Check for hotkeys keyboard input
         keypress = kb.getch()
         if keypress != -1:
-            if hotkey_menu.get_item(keypress):
+            if hotkey_menu.get_item(chr(keypress)):
                 # Call the hotkey function if the keypress was valid
-                hotkey_menu.run(keypress)
+                hotkey_menu.run_item(chr(keypress))
             
         # Move songs from the internal queue to the mpv queue
         # If no songs are left in the internal queue, start song radio
@@ -190,11 +190,14 @@ try:
             current_m, current_s = [round(time) for time in divmod(player.playback_time, 60)]
 
             # Print play time
-            print('%i:%i/%i:%i' % (current_m, current_s, total_m, total_s), end='\r')
-        time.sleep(1)
+            print('{0:01d}:{1:02d}/{2:01d}:{3:02d}'.format(current_m, current_s, total_m, total_s), end='\r')
+        time.sleep(0.01)
 except Exception as e:
     print(e)
+    kb.input('Paused')
 
 finally:
     # Reset the terminal to a nice state
     clean_exit()
+    import traceback
+    traceback.print_exc()
