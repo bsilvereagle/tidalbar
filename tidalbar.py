@@ -187,9 +187,11 @@ try:
 
 
         # Get durations and what not if a song is playing
-        if player.playback_time:
-            total_m, total_s = [round(time) for time in divmod(player.duration, 60)]  
-            current_m, current_s = [round(time) for time in divmod(player.playback_time, 60)]
+        song_duration = player.duration
+        current_time = player.playback_time
+        if song_duration and current_time:
+            total_m, total_s = [round(time) for time in divmod(song_duration, 60)]  
+            current_m, current_s = [round(time) for time in divmod(current_time, 60)]
 
             # Print play time
             print('{0:01d}:{1:02d}/{2:01d}:{3:02d}'.format(current_m, current_s, total_m, total_s), end='\r')
