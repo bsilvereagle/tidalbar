@@ -12,7 +12,7 @@ from menu import Menu
 #   KNOWN ISSUES
 #
 
-#   Pressing ESC may cause immediate termination
+#   Pressing downarrow immediatley causes .input to be read
 
 #
 #   EXTEND TIDALAPI
@@ -196,6 +196,8 @@ try:
         time.sleep(0.01)
 except Exception as e:
     print(e)
+    import traceback
+    traceback.print_exc()
     kb.input('Paused')
 
 finally:

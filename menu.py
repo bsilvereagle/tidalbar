@@ -39,16 +39,21 @@ class Menu:
         self.menu_map[key] = (text, function, data)
 
     def get_item(self, key):
-        
-        return(self.menu_map[key])
-
+        try:
+            return(self.menu_map[key])
+        except:
+            return None
     def get_item_text(self, key):
-
-        return(self.menu_map[key][0])
+        try:
+            return(self.menu_map[key][0])
+        except:
+            return None
 
     def get_item_function(self, key):
-
-        return(self.menu_map[key][1])
+        try:
+            return(self.menu_map[key][1])
+        except:
+            return None
 
     def get_item_data(self, key):
         try:
