@@ -12,7 +12,7 @@ from menu import Menu
 #   KNOWN ISSUES
 #
 
-#   Pressing the arrow keys during a kb.input() cause immediate termination
+#   Pressing ESC may cause immediate termination
 
 #
 #   EXTEND TIDALAPI
@@ -175,7 +175,9 @@ try:
         # Check for hotkeys keyboard input
         keypress = kb.getch()
         if keypress != -1:
-            if hotkey_menu.get_item(chr(keypress)):
+            if keypress > 255:
+                pass
+            elif hotkey_menu.get_item(chr(keypress)):
                 # Call the hotkey function if the keypress was valid
                 hotkey_menu.run_item(chr(keypress))
             
