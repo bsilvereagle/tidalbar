@@ -5,7 +5,6 @@ import mpv
 import getpass
 import time
 from requests import HTTPError
-from collections import OrderedDict
 from nonblockingkb import NonBlockingKB
 from menu import Menu
 
@@ -91,8 +90,24 @@ kb = NonBlockingKB()
 #   MAIN MENU
 #
 
-def play_playlist(playlist_id):
-    pass
+def run_menu(menu):
+    
+    menu.print()
+    selection = kb.input('Menu Selection: ')
+    if not menu.get_item(selection):
+        print('Invalid Selection',end='\r\n')
+    else:
+        menu.run_item(selection)
+
+def play_playlist(playlist):
+    # Accept either an id or a Playlist object
+    if type(playlist) is tidalapi.Playlist:
+        playlist_id = playlist.id
+    else:
+        # Assume we have an id
+        playlist_id = playlist
+    for track in session.get_playlist_tracks(playlist_id):
+        player.loadfile('rtmp://'+session.get_media_url(track.id),'append-play')
 
 #  Main Menu Functions
 def tidal_whats_new():
@@ -106,9 +121,8 @@ def user_playlists():
 
     for counter, playlist in enumerate(session.get_user_playlists(session.user.id)):
         playlist_menu.add_item(str(counter),playlist.name,play_playlist,playlist)
-    playlist_menu.print() 
-
-    selection = kb.input('Menu Selection: ')
+    
+    run_menu(playlist_menu)
 
 def user_albums():
     pass
@@ -133,47 +147,54 @@ main_menu = Menu({'1':('Tidal What\'s New', tidal_whats_new),
                   '8':('Cancel',cancel_menu),
                   '9':('Quit',clean_exit)})
 
+def player_toggle_pause():
+    if player.pause:
+        player.pause = False
+    else:
+        player.pause = True
+
+def player_next_track():
+    pass
+
+hotkey_menu = Menu({'p':('Pause', player_toggle_pause),
+                    'n':('Next Track', player_next_track),
+                    'm':('Main Menu', run_menu, main_menu),
+                    'h':('Help', player_toggle_pause)})
+                    
+
+
 #
 #   MAIN LOOP
 #
 
 try:
     # Run the main menu to start
-    selection = None
-    while selection is None:
-        main_menu.print()
-        selection = kb.input('Menu Selection: ')
-        if not main_menu.get_item(selection):
-            print('Invalid Selection', end='\r\n')
-            
-    data = main_menu.get_item_data(selection)
-    func = main_menu.get_item_function(selection)
-    if data:
-        func(data)
-    else:
-        func()
+    run_menu(main_menu)
 
     while True:
         # Check for hotkeys keyboard input
         keypress = kb.getch()
         if keypress != -1:
-            result = True 
-            if result:
-                # Call the resulting function
-                pass
+            if hotkey_menu.get_item(keypress):
+                # Call the hotkey function if the keypress was valid
+                hotkey_menu.run(keypress)
             
         # Move songs from the internal queue to the mpv queue
         # If no songs are left in the internal queue, start song radio
                 
 
 
-        # Get durations and what not
-        total_m, total_s = [round(time) for time in divmod(player.duration)]  
-        current_m, current_s = [round(time) for time in divmod(player.playback_time)]
+        # Get durations and what not if a song is playing
+        if player.playback_time:
+            total_m, total_s = [round(time) for time in divmod(player.duration, 60)]  
+            current_m, current_s = [round(time) for time in divmod(player.playback_time, 60)]
 
-        # Print play time
-        print('%i:%i/%i:%i' % (current_m, current_s, total_m, total_s), end='\r')
+            # Print play time
+            print('%i:%i/%i:%i' % (current_m, current_s, total_m, total_s), end='\r')
         time.sleep(1)
+except Exception as e:
+    print(e)
+
 finally:
     # Reset the terminal to a nice state
     clean_exit()

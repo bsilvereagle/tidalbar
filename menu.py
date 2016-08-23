@@ -65,17 +65,14 @@ class Menu:
         for item in ordered_menu:
             print('\t%s)\t%s' % (item, ordered_menu[item][0]), end=end)
         print('\n', end=end)
-
-
-    def run(self):
-        # Present menu and get user selection
-        result = None
-        while result is None:
-            self.print() 
-            # dict.get returns None if the selected item is not present
-            result = self.receive() 
-            if not self.get_item(result):
-                print('Invalid input', end='\r\n')
-        # Act on the action ('Menu Text',function_name)
-        result = self.get_item_function
-        result()
+    
+    def run_item(self, key):
+        
+        function = self.get_item_function(key)
+        data = self.get_item_data(key)
+        
+        if data:
+            function(data)
+        else:
+            function()
+            
