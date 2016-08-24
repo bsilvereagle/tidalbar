@@ -7,6 +7,7 @@ import time
 from requests import HTTPError
 from nonblockingkb import NonBlockingKB
 from menu import Menu
+from doublelinkedlist import DoubleLinkedList
 
 #
 #   KNOWN ISSUES
@@ -35,6 +36,11 @@ player = mpv.MPV()
 
 # Establish the Tidal session using the Kodi tidalapi library
 session = tidalapi.Session()
+
+# Create list to keep track of playlist. Can't use mpv since the URLs given back from 
+# Tidal have expiration dates. Usually, you can get 6 or so tracks in before the URLs
+# start to go bad, but this object just fetches a URL as needed
+internal_playlist = DoubleLinkedList()
 
 #
 #   LOGIN TO TIDAL
@@ -106,8 +112,10 @@ def play_playlist(playlist):
     else:
         # Assume we have an id
         playlist_id = playlist
+    
     for track in session.get_playlist_tracks(playlist_id):
-        player.loadfile('rtmp://'+session.get_media_url(track.id),'append-play')
+        internal_playlist.append(track)
+    refresh_player = True
 
 #  Main Menu Functions
 def tidal_whats_new():
@@ -126,10 +134,13 @@ def user_playlists():
 
 def user_albums():
     pass
+
 def user_tracks():
     pass
+
 def user_artists():
     pass
+
 def cancel_menu():
     pass
 
@@ -154,20 +165,27 @@ def player_toggle_pause():
         player.pause = True
 
 def player_next_track():
-    pass
+    # Get the next song and if none, start track radio for current song
+    player.playlist_clear()
+    player.quit()
+    current_track = internal_playlist.next()
+    refresh_player = True
 
-hotkey_menu = Menu({'p':('Pause', player_toggle_pause),
+def print_hotkeys():
+    hotkey_menu.print()
+
+hotkey_menu = Menu({' ':('Pause', player_toggle_pause),
                     'n':('Next Track', player_next_track),
                     'm':('Main Menu', run_menu, main_menu),
-                    'h':('Help', player_toggle_pause)})
+                    'h':('Help', player_toggle_pause),
+                    'k':('Show Playlist',print, internal_playlist)})
                     
-
-
 #
 #   MAIN LOOP
 #
 
 try:
+    current_track = None
     # Run the main menu to start
     run_menu(main_menu)
 
@@ -180,11 +198,24 @@ try:
             elif hotkey_menu.get_item(chr(keypress)):
                 # Call the hotkey function if the keypress was valid
                 hotkey_menu.run_item(chr(keypress))
+                time.sleep(1)
             
-        # Move songs from the internal queue to the mpv queue
-        # If no songs are left in the internal queue, start song radio
+        # If 
+        if not current_track:
+            current_track = internal_playlist.current_data()
+            refresh_player = True
+        # If nothing is playing, get something playing
+        if not player.duration:
+            current_track = internal_playlist.next()
+            if not current_track:
+                print('No More Tracks')
+            else:
+                refresh_player = True
                 
-
+        if refresh_player:
+            player.loadfile('rtmp://'+session.get_media_url(current_track.id),'append-play')
+            time.sleep(1)
+            refresh_player = False
 
         # Get durations and what not if a song is playing
         song_duration = player.duration
@@ -194,8 +225,12 @@ try:
             current_m, current_s = [round(time) for time in divmod(current_time, 60)]
 
             # Print play time
-            print('{0:01d}:{1:02d}/{2:01d}:{3:02d}'.format(current_m, current_s, total_m, total_s), end='\r')
+            print('\r{0:01d}:{1:02d}/{2:01d}:{3:02d} '.format(current_m, current_s, total_m, total_s), end='')
+            # Print song name
+            current_track = internal_playlist.current_data()
+            print('{0} by {1}'.format(current_track.name, current_track.artist.name), end='\r')
         time.sleep(0.01)
+
 except Exception as e:
     print(e)
     import traceback
