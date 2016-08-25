@@ -166,10 +166,10 @@ def player_toggle_pause():
 
 def player_next_track():
     # Get the next song and if none, start track radio for current song
-    player.playlist_clear()
-    player.quit()
-    current_track = internal_playlist.next()
-    refresh_player = True
+    play_track(internal_playlist.next())
+
+def player_prev_track():
+    play_track(internal_playlist.prev())
 
 def print_hotkeys():
     hotkey_menu.print()
@@ -179,7 +179,17 @@ hotkey_menu = Menu({' ':('Pause', player_toggle_pause),
                     'm':('Main Menu', run_menu, main_menu),
                     'h':('Help', player_toggle_pause),
                     'k':('Show Playlist',print, internal_playlist)})
-                    
+def play_track(track):
+    if session.get_media_url(track.id):
+        player.loadfile('rtmp://'+session.get_media_url(track.id),'replace')
+        print('', end='\r\n')
+        while not player.duration:
+            print('Loading stream...',end='\r')
+        return track
+    else:
+        print('Error fetching URL',end='\r\n')
+        return None
+
 #
 #   MAIN LOOP
 #
@@ -202,20 +212,14 @@ try:
             
         # If 
         if not current_track:
-            current_track = internal_playlist.current_data()
-            refresh_player = True
-        # If nothing is playing, get something playing
-        if not player.duration:
+             current_track = play_track(internal_playlist.current_data())
+        # If mpv is out of songs, add some
+        elif not player.duration:
             current_track = internal_playlist.next()
             if not current_track:
                 print('No More Tracks')
             else:
-                refresh_player = True
-                
-        if refresh_player:
-            player.loadfile('rtmp://'+session.get_media_url(current_track.id),'append-play')
-            time.sleep(1)
-            refresh_player = False
+                current_track = play_track(current_track)
 
         # Get durations and what not if a song is playing
         song_duration = player.duration
