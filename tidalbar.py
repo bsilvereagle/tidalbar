@@ -14,6 +14,9 @@ from doublelinkedlist import DoubleLinkedList
 #
 
 #   Pressing downarrow immediatley causes .input to be read
+#   Holding the spacebar pauses repeatedly. Pause toggles on/off every second for days
+#   '10' as a list index shows up after the 1. 
+#   session.get_genre_items always 404s
 
 #
 #   EXTEND TIDALAPI
@@ -91,7 +94,6 @@ kb = NonBlockingKB()
 #   and execute either han_shot_first(mf) or greedo_shot_first()
 #
 
-
 #
 #   MAIN MENU
 #
@@ -117,13 +119,39 @@ def play_playlist(playlist):
         internal_playlist.append(track)
     refresh_player = True
 
+# Given a list of tidalapi items, generate a menu where 'action' is the called function on the menu item
+def dynamic_menu(itemlist, action=play_playlist):
+    dynamic_menu = Menu()
+    
+    # If itemlist is not a true list, but instead an item (Playlist/Category), then
+    #   get the list of items corresponding to that item
+    if type(itemlist) is tidalapi.models.Category:
+        # See if we have a Mood category
+        try:
+            itemlist = session.get_mood_playlists(itemlist.id)
+        except:
+            # Nope, it's a genre
+            itemlist = session.get_genre_items(itemlist.id,'track')
+
+    for counter, item in enumerate(itemlist):
+        dynamic_menu.add_item(str(counter), item.name, action, item)
+
+    run_menu(dynamic_menu)
+
 #  Main Menu Functions
+def search():
+    pass
+
 def tidal_whats_new():
+    dynamic_menu(session.get_featured())
+
+def tidal_moods():
+    dynamic_menu(session.get_moods(), action=dynamic_menu)
     pass
-def tidal_playlists():
-    pass
+
 def tidal_genres():
-    pass
+    dynamic_menu(session.get_genres(), action=dynamic_menu)
+
 def user_playlists():
     playlist_menu = Menu()
 
@@ -148,9 +176,10 @@ def clean_exit():
     kb.reset()
     exit()
 
-main_menu = Menu({'1':('Tidal What\'s New', tidal_whats_new),
-                  '2':('Tidal Playlists', tidal_playlists),
-                  '3':('Tidal Genres', tidal_genres),
+main_menu = Menu({'0':('Search', search),
+                  '1':('Tidal What\'s New', tidal_whats_new),
+                  '2':('Tidal Moods', tidal_moods),
+                  # '3':('Tidal Genres', tidal_genres), # Genres 404
                   '4':('Playlists', user_playlists),
                   '5':('Albums', user_albums),
                   '6':('Tracks', user_tracks),
@@ -174,13 +203,27 @@ def player_prev_track():
 def print_hotkeys():
     hotkey_menu.print()
 
+def clear_playlist():
+    internal_playlist = DoubleLinkedList()
+    run_menu(main_menu)
+
+def track_radio():
+    current_track = internal_playlist.current_data()
+
+    for track in session.get_track_radio(current_track.id):
+        internal_playlist.insert(track)
+
 hotkey_menu = Menu({' ':('Pause', player_toggle_pause),
                     'n':('Next Track', player_next_track),
                     'm':('Main Menu', run_menu, main_menu),
-                    'h':('Help', player_toggle_pause),
-                    'k':('Show Playlist',print, internal_playlist)})
+                    'h':('Help', print_hotkeys),
+                    'k':('Show Playlist',print, internal_playlist),
+                    'c':('Clear Playlist',clear_playlist),
+                    'r':('Track Radio',track_radio)})
+
 def play_track(track):
     if session.get_media_url(track.id):
+        # See man page for mpv on 'replace' v 'append-play', etc
         player.loadfile('rtmp://'+session.get_media_url(track.id),'replace')
         print('', end='\r\n')
         while not player.duration:
@@ -210,7 +253,7 @@ try:
                 hotkey_menu.run_item(chr(keypress))
                 time.sleep(1)
             
-        # If 
+        # If it's the first time through 
         if not current_track:
              current_track = play_track(internal_playlist.current_data())
         # If mpv is out of songs, add some
@@ -225,14 +268,16 @@ try:
         song_duration = player.duration
         current_time = player.playback_time
         if song_duration and current_time:
+            # Print play time
             total_m, total_s = [round(time) for time in divmod(song_duration, 60)]  
             current_m, current_s = [round(time) for time in divmod(current_time, 60)]
-
-            # Print play time
             print('\r{0:01d}:{1:02d}/{2:01d}:{3:02d} '.format(current_m, current_s, total_m, total_s), end='')
+
             # Print song name
             current_track = internal_playlist.current_data()
             print('{0} by {1}'.format(current_track.name, current_track.artist.name), end='\r')
+        
+        # Take a small pause
         time.sleep(0.01)
 
 except Exception as e:
@@ -246,3 +291,4 @@ finally:
     clean_exit()
     import traceback
     traceback.print_exc()
+    exit()

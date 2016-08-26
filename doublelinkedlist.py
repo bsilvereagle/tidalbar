@@ -36,8 +36,18 @@ class DoubleLinkedList:
         # Retun the head to where it was prior to printing
         self.head = old_head
         return result
+    
+    # Inserts node after head, no head movement
     def insert(self, data):
-        self.insertAfter(data)
+        if self.head is None:
+            self.head = Node(data, None, None)
+        else:
+            new_node = Node(data, self.head, self.head.next_node)
+            if self.head.next_node:
+                self.head.next_node.prev_node = new_node
+                self.head.next_node = new_node
+            else:
+                self.head.next_node = new_node
 
     # Inserts node after head, moves head forward
     def insertAfter(self, data):
