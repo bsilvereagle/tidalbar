@@ -8,7 +8,22 @@ Using tidalapi, it is possible to acquire the RTMP URLs for tracks on TIDAL. [mp
 
 ### Installation
 
+Clone the repo:
+`git clone https://github.com/bsilvereagle/tidalbar.git`
+
+Install `tidalapi` pip module:
+
+`pip install tidalapi`
+
+Get the `python-mpv` module from Github, NOT python repos:
+
+`cd tidalbar`
+`wget -O mpv.py https://raw.githubusercontent.com/jaseg/python-mpv/master/mpv.py`
+
+
 ### Usage
+
+`python3 tidalbar.py`
 
 ### License
 
